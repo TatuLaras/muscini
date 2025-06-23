@@ -2,15 +2,16 @@
 #define _FREQ
 
 #include "miniaudio.h"
-#define FREQ_INPUT_SIZE 1024
-#define FREQ_FREQUENCY_COUNT (FREQ_INPUT_SIZE / 2)
+#define INPUT_SIZE 1024
+#define FREQUENCY_COUNT (INPUT_SIZE / 2)
 
 /*
 Analyze frequency content of captured audio using fast fourier transform.
 */
 
 typedef struct {
-    float frequencies[FREQ_FREQUENCY_COUNT];
+    float frequencies[FREQUENCY_COUNT];
+    float beat;
 } AudioMetrics;
 
 // Initializes this module and starts capturing audio data for analysis.

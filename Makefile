@@ -18,10 +18,10 @@ CFLAGS = $(PACKAGES) $(INCLUDE) -Wall -Wextra -Wshadow -pedantic -Wstrict-protot
 
 CFLAGS_TEST = $(PACKAGES) -DTEST -I$(UNITY_DIR) -I$(SRC_DIR) $(INCLUDE) -ggdb $(SANITIZE)
 CFLAGS_DEBUG = $(CFLAGS) -DDEBUG -ggdb
-CFLAGS_ASAN = $(CFLAGS) -DDEBUG $(SANITIZE)
+CFLAGS_ASAN = $(CFLAGS) -DDEBUG $(SANITIZE) -g
 CFLAGS_RELEASE = $(CFLAGS) -DNDEBUG -Ofast
 
-CFLAGS_SCENE = $(PACKAGES) $(INCLUDE) -Wall -Wextra -Wshadow -pedantic -Wstrict-prototypes -march=native -c -fpic
+CFLAGS_SCENE = $(PACKAGES) $(INCLUDE) -Wall -Wextra -Wshadow -pedantic -Wstrict-prototypes -march=native -c -fpic -g
 
 # Arguments to append to the program run with "make run"
 ARGS = 

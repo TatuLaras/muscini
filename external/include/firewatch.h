@@ -82,6 +82,9 @@ void firewatch_new_file(const char *filepath, uint64_t cookie,
 // when `load_instantly` of firewatch_new_file is set to 0).
 void firewatch_check(void);
 
+// Restores all internal state to its initial state.
+void firewatch_reset(void);
+
 #endif // _FIREWATCH
 
 #ifdef LSP_EDITOR
@@ -155,11 +158,16 @@ static inline int fw_basename_start_index(const char *string) {
 static void *fw_watch_for_changes(void *_a) {
     assert(fw_inotify_fp > 0);
     char buf[_BUF_SIZE] = {0};
-    size_t size, i = 0;
+    size_t size = 0;
 
     while (1) {
+        if (fw_inotify_fp <= 0)
+            abort();
         size = read(fw_inotify_fp, buf, _BUF_SIZE);
-        i = 0;
+        if (fw_inotify_fp <= 0)
+            abort();
+
+        size_t i = 0;
         while (i < size) {
             struct inotify_event *event = (struct inotify_event *)buf + i;
             i += sizeof(struct inotify_event) + event->len;
@@ -279,6 +287,23 @@ void firewatch_check(void) {
 
     pthread_mutex_unlock(&fw_lock);
 #endif
+}
+
+void firewatch_reset(void) {
+    pthread_mutex_lock(&fw_lock);
+
+    fw_thread_id = 0;
+    fw_inotify_fp = -1;
+
+    for (size_t i = 0; i < FIREWATCH_MAX_DIRECTORIES; i++) {
+        fileinfovec_free(fw_file_info_lists + i);
+        fw_file_info_lists[i] = (FileInfoVector){0};
+    }
+
+    fileinfovec_free(&fw_needs_refresh_queue);
+    fw_needs_refresh_queue = (FileInfoVector){0};
+
+    pthread_mutex_unlock(&fw_lock);
 }
 
 #endif // FIREWATCH_IMPLEMENTATION

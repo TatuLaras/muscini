@@ -1,4 +1,5 @@
 #include "scenes.h"
+#include <raylib.h>
 
 #define FIREWATCH_IMPLEMENTATION
 #include "firewatch.h"
@@ -96,7 +97,15 @@ size_t scenes_add(const char *filepath) {
 
 void scenes_update_current(AudioMetrics *metrics) {
     assert(current_scene < scenes.data_used);
-
     firewatch_check();
+
+    if (!scenes.data[current_scene].update) {
+        BeginDrawing();
+        ClearBackground(BLACK);
+        DrawText("error", 5, 2, 20, RED);
+        EndDrawing();
+        return;
+    }
+
     (*scenes.data[current_scene].update)(metrics);
 }

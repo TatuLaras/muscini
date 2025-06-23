@@ -9,7 +9,11 @@
 #define CHANNELS 2
 #define SAMPLE_RATE 48000
 
-static float samples_l[FREQ_INPUT_SIZE] = {0};
+#define MAXIMUM_VALUE_DECAY_RATE 0.00002
+#define SMOOTHING_AVERAGING_WINDOW 2
+#define SMOOTH_REALTIME_WINDOW 12
+
+static float samples_l[INPUT_SIZE] = {0};
 static size_t samples_l_used = 0;
 static pthread_mutex_t lock;
 
@@ -17,7 +21,7 @@ static FFTTransformer *transformer = 0;
 
 static ma_device device;
 
-static const float frequency_values[FREQ_FREQUENCY_COUNT] = {
+static const float frequency_values[FREQUENCY_COUNT] = {
     0.000000,     43.066406,    86.132812,    129.199219,   172.265625,
     215.332031,   258.398438,   301.464844,   344.531250,   387.597656,
     430.664062,   473.730469,   516.796875,   559.863281,   602.929688,
@@ -123,7 +127,7 @@ static const float frequency_values[FREQ_FREQUENCY_COUNT] = {
     21963.867188, 22006.933594};
 
 float analyze_get_frequency_value(size_t frequency_index) {
-    if (frequency_index >= FREQ_FREQUENCY_COUNT)
+    if (frequency_index >= FREQUENCY_COUNT)
         return 0;
     return frequency_values[frequency_index];
 }
@@ -135,7 +139,7 @@ static void data_callback(ma_device *pDevice, void *pOutput, const void *pInput,
     float *frames = (float *)pInput;
     for (size_t i = 0; i < frameCount * 2; i += 2) {
         // printf("L: %f R: %f\n", frames[i], frames[i + 1]);
-        samples_l[samples_l_used++ % FREQ_INPUT_SIZE] = frames[i];
+        samples_l[samples_l_used++ % INPUT_SIZE] = frames[i];
     }
 
     pthread_mutex_unlock(&lock);
@@ -161,7 +165,7 @@ int analyze_init(const ma_device_id *device_id) {
         return 1;
     }
 
-    transformer = create_fft_transformer(FREQ_INPUT_SIZE, FFT_SCALED_OUTPUT);
+    transformer = create_fft_transformer(INPUT_SIZE, FFT_SCALED_OUTPUT);
     assert(transformer);
 
     return 0;
@@ -177,29 +181,58 @@ static inline float hanning(int i, int nn) {
     return (0.5 * (1.0 - cosf(2.0 * M_PI * (float)i / (float)(nn - 1))));
 }
 
+static inline void rolling_average(float *out_value, float new, float window) {
+    *out_value = (*out_value) * (window - 1) / window + new / window;
+}
+
 void analyze_get_metrics(AudioMetrics *out_metrics) {
     assert(transformer);
     assert(out_metrics);
 
     pthread_mutex_lock(&lock);
 
-    static float temp_buffer[FREQ_INPUT_SIZE] = {0};
+    static float temp_buffer[INPUT_SIZE] = {0};
+
+    // A slowly decaying maximum value to normalize frequency data
+    static float maximum = 0;
+    maximum -= MAXIMUM_VALUE_DECAY_RATE;
+    if (maximum < 0.001)
+        maximum = 0.001;
 
     // Copy data while applying windowing function
-    for (size_t i = 0; i < FREQ_INPUT_SIZE; i++)
-        temp_buffer[i] = samples_l[i] * hanning(i, FREQ_INPUT_SIZE);
+    for (size_t i = 0; i < INPUT_SIZE; i++)
+        temp_buffer[i] = samples_l[i] * hanning(i, INPUT_SIZE);
+
+    static float smooth_realtime_maximum = 0;
+    static float rapid_realtime_maximum = 0;
+    float realtime_maximum = 0;
 
     fft_forward(transformer, temp_buffer);
 
-    for (size_t i = 0; i < FREQ_FREQUENCY_COUNT; i++) {
-        assert((i * 2 + 1) < FREQ_INPUT_SIZE);
+    for (size_t i = 0; i < FREQUENCY_COUNT; i++) {
+        assert((i * 2 + 1) < INPUT_SIZE);
 
         float cos_comp = temp_buffer[i * 2];
         float sin_comp = temp_buffer[i * 2 + 1];
         float mag = sqrt((cos_comp * cos_comp) + (sin_comp * sin_comp));
 
-        out_metrics->frequencies[i] = mag;
+        // Values get smoothed using a slim rolling average
+        rolling_average(out_metrics->frequencies + i, (mag / maximum),
+                        SMOOTHING_AVERAGING_WINDOW);
+
+        if (maximum < mag)
+            maximum = mag;
+        if (i < 5 && realtime_maximum < mag)
+            realtime_maximum = mag;
     }
+
+    rolling_average(&smooth_realtime_maximum, realtime_maximum, 10);
+    rolling_average(&rapid_realtime_maximum, realtime_maximum, 4);
+
+    out_metrics->beat = (rapid_realtime_maximum - smooth_realtime_maximum) /
+                        (maximum - smooth_realtime_maximum);
+    if (out_metrics->beat < 0.0)
+        out_metrics->beat = 0;
 
     pthread_mutex_unlock(&lock);
 }

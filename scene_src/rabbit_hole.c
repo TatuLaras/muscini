@@ -89,7 +89,7 @@ void scene_update(AudioMetrics *metrics) {
 
     static float progress = 0;
     static float beat = 0;
-    sc_rolling_average(&beat, metrics->beat * 10, 10);
+    sc_decay(&beat, metrics->beat, 0.25);
 
     progress = fmod(progress + beat, 100);
     SetShaderValue(shader, loc_beat, &progress, SHADER_UNIFORM_FLOAT);

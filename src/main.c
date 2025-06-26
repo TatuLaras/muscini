@@ -3,33 +3,56 @@
 #include "scenes.h"
 #include <raylib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static inline int get_audio_device_id(ma_context *context, int device_index,
+                                      ma_device_id *out_device_id) {
+
+    ma_device_info device_info;
+
+    if (device_index >= 0) {
+        if (audiodevice_get_by_index(context, device_index, &device_info))
+            return 1;
+    } else if (audiodevice_get_interactive(context, &device_info))
+        return 1;
+
+    printf("INFO: Using audio device %s.\n", device_info.name);
+    if (out_device_id)
+        *out_device_id = device_info.id;
+
+    return 0;
+}
 
 int main(int argc, char **argv) {
     char *scene = 0;
-    if (argc < 2) {
+    int device_index = -1;
+
+    for (int i = 1; i < argc; i++) {
+        if (!strncmp(argv[i], "-d", 2) && argv[i][2] != 0) {
+            device_index = strtol(argv[i] + 2, 0, 10);
+        }
+        scene = argv[1];
+    }
+
+    if (!scene) {
         fprintf(stderr, "Usage: muscini [scene object file]\n");
         return 1;
     }
 
-    scene = argv[1];
-    if (!scene)
-        return 1;
-
-    // Audio context and device selection
-
     ma_context context;
     if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
         printf("Failed to initialize context.\n");
-        return -2;
-    }
-
-    ma_device_info device_info;
-    if (audiodevice_get_interactive(&context, &device_info)) {
-        fprintf(stderr, "ERROR: Getting device failed.\n");
         return 1;
     }
 
-    analyze_init(&device_info.id);
+    ma_device_id device_id;
+    if (get_audio_device_id(&context, device_index, &device_id)) {
+        ma_context_uninit(&context);
+        return 1;
+    }
+
+    analyze_init(&device_id);
 
     scenes_init();
 

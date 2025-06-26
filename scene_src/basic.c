@@ -27,10 +27,10 @@ void scene_update(AudioMetrics *metrics) {
     uint32_t screen_width = GetScreenWidth();
 
     static float smooth_intensity = 0;
-    sc_rolling_average(&smooth_intensity, metrics->beat * 2, 10);
+    sc_decay(&smooth_intensity, metrics->beat, 0.25);
 
-    float val = smooth_intensity;
-    Color bg_color = (Color){val * 255, val * 255, val * 255, 255};
+    Color bg_color = (Color){smooth_intensity * 255, smooth_intensity * 255,
+                             smooth_intensity * 255, 255};
     ClearBackground(bg_color);
 
     float horizontal = 0;
@@ -50,12 +50,16 @@ void scene_update(AudioMetrics *metrics) {
                        (Vector2){horizontal, screen_height}, line_width,
                        (Color){240, 20, 20, 255});
 
-        float height = smooth_intensity;
+        float height = metrics->beat;
 
+        DrawLineEx((Vector2){0, screen_height - screen_height * height * 32},
+                   (Vector2){screen_width,
+                             screen_height - screen_height * height * 32},
+                   4, metrics->beat ? PINK : GREEN);
         DrawLineEx(
-            (Vector2){0, screen_height - screen_height * height},
-            (Vector2){screen_width, screen_height - screen_height * height}, 2,
-            GREEN);
+            (Vector2){0, screen_height - screen_height * 0.008 * 32},
+            (Vector2){screen_width, screen_height - screen_height * 0.008 * 32},
+            4, metrics->beat ? RED : WHITE);
     }
 
     EndDrawing();

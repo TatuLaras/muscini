@@ -12,7 +12,7 @@ INCLUDE = -Iexternal/include -Isrc
 
 CC = gcc
 
-PACKAGES = $(shell pkg-config --libs raylib) -lm -ldl
+PACKAGES = $(shell pkg-config --libs raylib) -lm -ldl -lpthread
 SANITIZE = -fsanitize=address
 CFLAGS = $(PACKAGES) $(INCLUDE) -Wall -Wextra -Wshadow -pedantic -Wstrict-prototypes -march=native
 
@@ -21,7 +21,7 @@ CFLAGS_DEBUG = $(CFLAGS) -DDEBUG -ggdb
 CFLAGS_ASAN = $(CFLAGS) -DDEBUG $(SANITIZE) -g
 CFLAGS_RELEASE = $(CFLAGS) -DNDEBUG -Ofast
 
-CFLAGS_SCENE = $(PACKAGES) $(INCLUDE) -Wall -Wextra -Wshadow -pedantic -Wstrict-prototypes -march=native -c -fpic -g
+CFLAGS_SCENE = $(PACKAGES) $(INCLUDE) -Wall -Wextra -Wshadow -pedantic -Wstrict-prototypes -march=native -c -fpic -g -DDEBUG
 
 # Arguments to append to the program run with "make run"
 ARGS = 

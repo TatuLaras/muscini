@@ -12,6 +12,7 @@
 #define MAXIMUM_VALUE_DECAY_RATE 0.00002
 #define SMOOTHING_AVERAGING_WINDOW 2
 #define SMOOTH_REALTIME_WINDOW 12
+#define BEAT_TRESHOLD 0.008
 
 static float samples_l[INPUT_SIZE] = {0};
 static size_t samples_l_used = 0;
@@ -227,12 +228,10 @@ void analyze_get_metrics(AudioMetrics *out_metrics) {
     }
 
     rolling_average(&smooth_realtime_maximum, realtime_maximum, 10);
-    rolling_average(&rapid_realtime_maximum, realtime_maximum, 4);
+    rolling_average(&rapid_realtime_maximum, realtime_maximum, 8);
 
-    out_metrics->beat = (rapid_realtime_maximum - smooth_realtime_maximum) /
-                        (maximum - smooth_realtime_maximum);
-    if (out_metrics->beat < 0.0)
-        out_metrics->beat = 0;
+    out_metrics->beat = ((rapid_realtime_maximum - smooth_realtime_maximum) /
+                         maximum) > BEAT_TRESHOLD;
 
     pthread_mutex_unlock(&lock);
 }

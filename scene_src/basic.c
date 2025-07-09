@@ -33,8 +33,10 @@ void scene_update(AudioMetrics *metrics) {
                              smooth_intensity * 255, 255};
     ClearBackground(bg_color);
 
+    float min = 40;
+
     float horizontal = 0;
-    uint16_t inspect = 10;
+    uint16_t inspect = min;
     for (uint16_t i = 0; i < FREQUENCY_COUNT; i++) {
         uint8_t line_width =
             i < LINE_WIDTH_CUTOFF ? LINE_WIDTH_LEFT : LINE_WIDTH_RIGHT;
@@ -44,7 +46,7 @@ void scene_update(AudioMetrics *metrics) {
 
         if (i == inspect)
             DrawLineEx((Vector2){horizontal, 0},
-                       (Vector2){horizontal, screen_height}, line_width, WHITE);
+                       (Vector2){horizontal, screen_height}, line_width, BLACK);
         else
             DrawLineEx((Vector2){horizontal, screen_height - freq_height},
                        (Vector2){horizontal, screen_height}, line_width,

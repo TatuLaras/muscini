@@ -10,9 +10,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-//  TODO: A lot of these frequency analysis should be refactored to a common
-//  library.
-
 #define MAX_DECAY_RATE 0.00001
 #define AVERAGE_WINDOW 10
 #define BG_AVERAGE_WINDOW 12
@@ -89,7 +86,7 @@ void scene_update(AudioMetrics *metrics) {
 
     static float progress = 0;
     static float beat = 0;
-    sc_decay(&beat, metrics->beat, 0.25);
+    sc_decay(&beat, metrics->beat, 1.0);
 
     progress = fmod(progress + beat, 100);
     SetShaderValue(shader, loc_beat, &progress, SHADER_UNIFORM_FLOAT);

@@ -9,10 +9,6 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <stdint.h>
-#include <stdio.h>
-
-//  TODO: A lot of these frequency analysis should be refactored to a common
-//  library.
 
 #define MAX_DECAY_RATE 0.00001
 #define AVERAGE_WINDOW 10
@@ -24,7 +20,6 @@ static int loc_screen_width = 0;
 static int loc_screen_height = 0;
 static int loc_time = 0;
 static int loc_beat = 0;
-static int frequencies_locs[FREQUENCY_COUNT] = {0};
 
 static RenderTexture scene_render_target = {0};
 static RenderTexture shader_render_target = {0};
@@ -34,20 +29,11 @@ static inline void load_shader(const char *filepath, uint64_t cookie) {
         UnloadShader(shader);
 
     shader = LoadShader(0, filepath);
-    if (!shader.id) {
-        fprintf(stderr, "Could not load shader.\n");
-        return;
-    }
 
     loc_screen_width = GetShaderLocation(shader, "screen_width");
     loc_screen_height = GetShaderLocation(shader, "screen_height");
     loc_time = GetShaderLocation(shader, "time");
-    loc_beat = GetShaderLocation(shader, "progress");
-
-    for (size_t i = 0; i < FREQUENCY_COUNT; i++) {
-        frequencies_locs[i] =
-            GetShaderLocation(shader, TextFormat("frequencies[%i]", i));
-    }
+    loc_beat = GetShaderLocation(shader, "beat");
 
     (void)cookie;
 }
@@ -73,15 +59,13 @@ void scene_deinit(void) {
 void scene_update(AudioMetrics *metrics) {
     firewatch_check();
 
-    if (IsKeyPressed(KEY_SPACE))
-        firewatch_reset();
-
     if (!scene_render_target.id || IsWindowResized()) {
         if (scene_render_target.id)
             UnloadRenderTexture(scene_render_target);
         scene_render_target =
             LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     }
+
     if (!shader_render_target.id || IsWindowResized()) {
         if (shader_render_target.id)
             UnloadRenderTexture(shader_render_target);
@@ -89,13 +73,7 @@ void scene_update(AudioMetrics *metrics) {
             LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     }
 
-    // Shader locations
-
-    static float beat = 0;
-    sc_decay(&beat, metrics->beat, 0.25);
-
-    static int shader_width_height_updated = 0;
-    if (IsWindowResized() || !shader_width_height_updated) {
+    if (IsWindowResized()) {
         float height = GetScreenHeight();
         float width = GetScreenWidth();
         SetShaderValue(shader, loc_screen_width, &width, SHADER_UNIFORM_FLOAT);
@@ -106,35 +84,14 @@ void scene_update(AudioMetrics *metrics) {
     float time = GetTime();
     SetShaderValue(shader, loc_time, &time, SHADER_UNIFORM_FLOAT);
 
+    static float beat = 0;
+    sc_decay(&beat, metrics->beat, 1.5);
+    SetShaderValue(shader, loc_beat, &beat, SHADER_UNIFORM_FLOAT);
+
     uint32_t screen_height = GetScreenHeight();
     uint32_t screen_width = GetScreenWidth();
 
-    static float progress = 0;
-
-    progress = fmod(progress + beat, 100);
-    SetShaderValue(shader, loc_beat, &progress, SHADER_UNIFORM_FLOAT);
-
-    for (uint16_t i = 0; i < FREQUENCY_COUNT; i++) {
-        SetShaderValue(shader, frequencies_locs[i], metrics->frequencies + i,
-                       SHADER_UNIFORM_FLOAT);
-    }
-
-#define WINDOW 2
-#define BAND_COUNT 10
-    static float bands[BAND_COUNT] = {0};
-
-    sc_rolling_average(bands + 0, sc_range_average(metrics->frequencies, 0, 6),
-                       WINDOW);
-
     BeginTextureMode(scene_render_target);
-
-    float white_width = 80;
-    // DrawRectangle(0, 0, red_width * bands[0], red_width * bands[0], RED);
-    if (beat > 0.6)
-        DrawRectangle(white_width, screen_height * 0.5, white_width * beat,
-                      white_width * beat, RED);
-    DrawRectangle(0, screen_height * 0.5, white_width, white_width, WHITE);
-    // DrawCircle(white_width, screen_height * 0.5, white_width * 0.5, WHITE);
 
     EndTextureMode();
 
@@ -144,7 +101,9 @@ void scene_update(AudioMetrics *metrics) {
             scene_render_target.texture,
             (Rectangle){.width = scene_render_target.texture.width,
                         .height = scene_render_target.texture.height},
-            (Rectangle){.width = screen_width, .height = screen_height},
+            (Rectangle){.width = screen_width,
+                        .height = screen_height,
+                        .x = sin(time * 10) * 100},
             (Vector2){0}, 0, WHITE);
     }
     EndTextureMode();

@@ -23,6 +23,24 @@ static inline float sc_range_average(float *frequencies, uint16_t from,
     return sum;
 }
 
+static inline size_t sc_range_loudest_frequency(float *frequencies,
+                                                uint16_t from, uint16_t to) {
+    assert(from < FREQUENCY_COUNT);
+    assert(to < FREQUENCY_COUNT);
+    if (from >= FREQUENCY_COUNT || to >= FREQUENCY_COUNT)
+        return 0;
+
+    float max = 0;
+    size_t max_i = 0;
+    for (uint16_t i = from; i <= to; i++) {
+        if (max < frequencies[i] * i) {
+            max = frequencies[i] * i;
+            max_i = i;
+        }
+    }
+    return max_i / (to - from);
+}
+
 static inline void sc_rolling_average(float *out_value, float new,
                                       float window) {
     *out_value = (*out_value) * (window - 1) / window + new / window;

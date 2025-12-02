@@ -1,5 +1,9 @@
 # muscini - a different kind of music visualizer
 
+
+https://github.com/user-attachments/assets/c562da14-e520-4f9b-a1c2-3a538680cf50
+
+
 As with many of my projects the idea for this one came from a need of mine.
 I've been a fan of 90s to early 00s demoscene demos and I wanted a to do something like that myself.
 I wanted to have a sort of tool for creative visual programming that allows you to put on some psytrance and get "in the zone" programming a cool visualization through graphics programming that could incorporate information about currently playing desktop audio.

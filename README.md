@@ -1,8 +1,6 @@
 # muscini - a different kind of music visualizer
 
-
-https://github.com/user-attachments/assets/c562da14-e520-4f9b-a1c2-3a538680cf50
-
+![2025-12-02 13-52-59(1)](https://github.com/user-attachments/assets/75426de6-4576-4360-85ae-0bdc40c5d857)
 
 As with many of my projects the idea for this one came from a need of mine.
 I've been a fan of 90s to early 00s demoscene demos and I wanted a to do something like that myself.

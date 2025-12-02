@@ -1,7 +1,6 @@
 #include "scene_common.h"
 
 #define FIREWATCH_IMPLEMENTATION
-#include "analyze.h"
 #include "firewatch.h"
 
 #include <assert.h>
@@ -9,11 +8,6 @@
 #include <raymath.h>
 #include <stdint.h>
 #include <stdio.h>
-
-#define MAX_DECAY_RATE 0.00001
-#define AVERAGE_WINDOW 10
-#define BG_AVERAGE_WINDOW 12
-#define NORMAL_AVERAGE_WINDOW 3
 
 static Shader shader = {0};
 static Texture texture = {0};
@@ -86,7 +80,7 @@ void scene_update(AudioMetrics *metrics) {
 
     static float progress = 0;
     static float beat = 0;
-    sc_decay(&beat, metrics->beat, 1.0);
+    sc_decay(&beat, metrics->beat, 0.8);
 
     progress = fmod(progress + beat, 100);
     SetShaderValue(shader, loc_beat, &progress, SHADER_UNIFORM_FLOAT);

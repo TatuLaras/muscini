@@ -45,6 +45,7 @@ static inline void load_scene(const char *filepath, size_t scene_index) {
     Scene *scene = scenes.data + scene_index;
     deinit_scene(scene);
 
+    printf("%s\n", filepath);
     void *handle = dlopen(filepath, RTLD_NOW);
     if (!handle) {
         fprintf(stderr, "WARNING: Error opening scene object file: %s\n",

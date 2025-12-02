@@ -12,13 +12,13 @@ INCLUDE = -Iexternal/include -Isrc
 
 CC = gcc
 
-PACKAGES = $(shell pkg-config --libs raylib) -lm -ldl -lpthread
+PACKAGES = $(shell pkg-config --libs raylib jack) -lm -ldl -lpthread
 SANITIZE = -fsanitize=address
 CFLAGS = $(PACKAGES) $(INCLUDE) -Wall -Wextra -Wshadow -pedantic -Wstrict-prototypes -march=native
 
 CFLAGS_TEST = $(PACKAGES) -DTEST -I$(UNITY_DIR) -I$(SRC_DIR) $(INCLUDE) -ggdb $(SANITIZE)
-CFLAGS_DEBUG = $(CFLAGS) -DDEBUG -ggdb
-CFLAGS_ASAN = $(CFLAGS) -DDEBUG $(SANITIZE) -g
+CFLAGS_DEBUG = $(CFLAGS) -DDEBUG -ggdb -Og
+CFLAGS_ASAN = $(CFLAGS) -DDEBUG $(SANITIZE) -g -Og
 CFLAGS_RELEASE = $(CFLAGS) -DNDEBUG -Ofast
 
 CFLAGS_SCENE = $(PACKAGES) $(INCLUDE) -Wall -Wextra -Wshadow -pedantic -Wstrict-prototypes -march=native -c -fpic -g -DDEBUG
@@ -35,8 +35,6 @@ release: $(BUILD_DIR) $(BUILD_DIR)/release
 asan: $(BUILD_DIR) $(BUILD_DIR)/asan
 
 install: release
-	rm -rf /usr/share/noble
-	cp resources /usr/share/noble -r
 	cp $(BUILD_DIR)/release /usr/bin/$(NAME)
 
 run: $(BUILD_DIR) $(BUILD_DIR)/debug

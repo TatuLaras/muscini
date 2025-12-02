@@ -1,67 +1,84 @@
-#include "analyze.h"
-#include "scene_common.h"
-#include <assert.h>
+/*
+
+----- Example visualization -----
+
+
+To provide hot-reloading for external resources such as shaders I recommend
+using firewatch inside this visualization.
+
+#define FIREWATCH_IMPLEMENTATION
+#include "firewatch.h"
+
+An example of this can be found in scene_src/rabbit_hole.c
+
+Also see firewatch README.md for usage information:
+https://github.com/TatuLaras/firewatch?tab=readme-ov-file#load-files-from-current-thread
+
+*/
+
+// Visualizations are written using raylib.
+// For more information on how to use raylib see https://www.raylib.com/
 #include <raylib.h>
-#include <raymath.h>
-#include <stdint.h>
 
-#define MAX_DECAY_RATE 0.00005
-#define AVERAGE_WINDOW 10
-#define BG_AVERAGE_WINDOW 10
-#define NORMAL_AVERAGE_WINDOW 2
-#define LINE_WIDTH_LEFT 5
-#define LINE_WIDTH_RIGHT 2
-#define LINE_WIDTH_CUTOFF 140
+// The scene_common header file contains some utility functions that are common
+// to many visualizations. See this file for more information on what is
+// included.
+#include "scene_common.h"
 
+#define LINE_WIDTH 3
+
+// For every visualization, the following three functions need to be defined.
+
+// Runs when your visualization is loaded.
+// Here you can initialize stuff that your visualization uses.
 int scene_init(void) {
     return 0;
 }
+
+// Runs when your visualization is unloaded.
+// Here you can initialize things that your visualization needs.
 void scene_deinit(void) {}
 
-#define AVG_MAX_WINDOW 14
-#define INTENSITY_WINDOW 10
+/*
+Runs each frame.
+Draw your visualization here.
+
+The param `metrics` contains the musical information that you can utilize in
+your visualization.
+
+typedef struct {
+    // Relative amplitudes of frequencies in the signal.
+    float frequencies[FREQUENCY_COUNT];
+    // Will be 1.0 if a beat has just occurred, otherwise 0.0.
+    float beat;
+} AudioMetrics;
+
+*/
 void scene_update(AudioMetrics *metrics) {
+
+    // Remember to draw between BeingDrawing() and EndDrawing()
     BeginDrawing();
 
+    // Flash background with white on each "beat", with some fade out time.
+    static float bg_whiteness = 0;
+    sc_decay(&bg_whiteness, metrics->beat, 0.25);
+
+    ClearBackground((Color){bg_whiteness * 255, bg_whiteness * 255,
+                            bg_whiteness * 255, 255});
+
+    // Draw vertical lines for each frequency
+
     uint32_t screen_height = GetScreenHeight();
-    uint32_t screen_width = GetScreenWidth();
-
-    static float smooth_intensity = 0;
-    sc_decay(&smooth_intensity, metrics->beat, 0.25);
-
-    Color bg_color = (Color){smooth_intensity * 255, smooth_intensity * 255,
-                             smooth_intensity * 255, 255};
-    ClearBackground(bg_color);
-
-    float min = 40;
-
     float horizontal = 0;
-    uint16_t inspect = min;
+
     for (uint16_t i = 0; i < FREQUENCY_COUNT; i++) {
-        uint8_t line_width =
-            i < LINE_WIDTH_CUTOFF ? LINE_WIDTH_LEFT : LINE_WIDTH_RIGHT;
-        horizontal += line_width;
+
+        horizontal += LINE_WIDTH;
 
         float freq_height = screen_height * metrics->frequencies[i];
-
-        if (i == inspect)
-            DrawLineEx((Vector2){horizontal, 0},
-                       (Vector2){horizontal, screen_height}, line_width, BLACK);
-        else
-            DrawLineEx((Vector2){horizontal, screen_height - freq_height},
-                       (Vector2){horizontal, screen_height}, line_width,
-                       (Color){240, 20, 20, 255});
-
-        float height = metrics->beat;
-
-        DrawLineEx((Vector2){0, screen_height - screen_height * height * 32},
-                   (Vector2){screen_width,
-                             screen_height - screen_height * height * 32},
-                   4, metrics->beat ? PINK : GREEN);
-        DrawLineEx(
-            (Vector2){0, screen_height - screen_height * 0.008 * 32},
-            (Vector2){screen_width, screen_height - screen_height * 0.008 * 32},
-            4, metrics->beat ? RED : WHITE);
+        DrawLineEx((Vector2){horizontal, screen_height - freq_height},
+                   (Vector2){horizontal, screen_height}, LINE_WIDTH,
+                   (Color){240, 20, 20, 255});
     }
 
     EndDrawing();

@@ -15,6 +15,7 @@ Preamble over.
 
 ## Dependencies
 - raylib
+- JACK audio kit
 
 ## Features
 
